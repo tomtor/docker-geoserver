@@ -1,0 +1,70 @@
+kind: PersistentVolume
+apiVersion: v1
+metadata:
+  name: geoserver-volume
+  labels:
+    type: local
+    app: geoserver
+spec:
+  storageClassName: manual
+  capacity:
+    storage: 1Gi
+  accessModes:
+    - ReadWriteMany
+  hostPath:
+    path: "/data/geoserver"
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: geoserver-pv-claim
+  labels:
+    app: geoserver
+spec:
+  storageClassName: manual
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: geoserver
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: geoserver
+    spec:
+      containers:
+        - name: geoserver
+          image: tomtor/test-k8s:geoserver-0.2
+          # imagePullPolicy: "Always"
+          ports:
+            - containerPort: 80
+          envFrom:
+            - configMapRef:
+                name: geoserver-config
+          volumeMounts:
+            - mountPath: /data
+              name: geoserver
+      volumes:
+        - name: geoserver
+          persistentVolumeClaim:
+            claimName: geoserver-pv-claim
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: geoserver
+  labels:
+    app: geoserver
+spec:
+  type: NodePort
+  ports:
+   - port: 8080
+  selector:
+   app: geoserver
