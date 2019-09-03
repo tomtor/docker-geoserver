@@ -41,7 +41,8 @@ spec:
     spec:
       containers:
         - name: geoserver
-          image: tomtor/test-k8s:geoserver-0.2
+          image: tomtor/test-k8s:geoserver-512M
+          # image: localhost:32000/geoserver:512M-jndi
           # imagePullPolicy: "Always"
           ports:
             - containerPort: 80
@@ -51,10 +52,19 @@ spec:
           volumeMounts:
             - mountPath: /data
               name: geoserver
+            - name: tomcat-config
+              mountPath: "/usr/local/tomcat/conf/context.xml"
+              subPath: "context.xml"
       volumes:
         - name: geoserver
           persistentVolumeClaim:
             claimName: geoserver-pv-claim
+        - name: tomcat-config
+          configMap:
+            name: geoserver-config
+            items:
+              - key: tomcat-conf
+                path: "context.xml"
 ---
 apiVersion: v1
 kind: Service
